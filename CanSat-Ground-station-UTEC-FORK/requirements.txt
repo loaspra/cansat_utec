@@ -1,0 +1,8 @@
+numpy
+PyQt5
+PyQt5-sip
+pyqtgraph
+pyserial
+ipyleaflet
+folium
+PyQtWebEngine
