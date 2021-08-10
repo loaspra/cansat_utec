@@ -34,11 +34,13 @@ another [rocket science and CanSat](https://github.com/el-NASA/POA) project. **I
 ___
 ## Technologies
 Project is created with:
-* numpy==1.18.2
-* PyQt5==5.14.2
-* PyQt5-sip==12.7.2
-* pyqtgraph==0.10.0
-* pyserial==3.4
+* numpy
+* PyQt5
+* PyQt5-sip
+* pyqtgraph
+* pyserial
+* folium
+* PyQtWebEngine
 
 ___
 ## Setup Linux
@@ -56,8 +58,8 @@ ___
 Open CMD or PowerShell in the folder and type:
 ```
 > virtualenv env
-> \env\Scripts\activate.bat
-> pip install -r requeriments.txt
+> env\Scripts\activate.bat
+> pip install -r requirements.txt
 > python main.py
 ```
 
