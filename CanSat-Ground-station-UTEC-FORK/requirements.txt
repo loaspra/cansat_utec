@@ -6,3 +6,4 @@ pyserial
 ipyleaflet
 folium
 PyQtWebEngine
+Pillow

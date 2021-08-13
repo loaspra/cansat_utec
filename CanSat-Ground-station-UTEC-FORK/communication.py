@@ -9,8 +9,8 @@ class Communication:
     dummyPlug = False
     ports = serial.tools.list_ports.comports()
     ser = serial.Serial()
-    startlat = -12.135400
-    startlon = -77.022095
+    startlat = -12.408921 # -12.135400 
+    startlon = -69.202937 # -77.022095
     increase =   0.000500
 
 

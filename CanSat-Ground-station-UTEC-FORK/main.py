@@ -11,6 +11,7 @@ import folium
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 import io
 from datetime import datetime
+from PIL import Image
 
 pg.setConfigOption('background', (33, 33, 33))
 pg.setConfigOption('foreground', (197, 198, 199))
@@ -109,9 +110,18 @@ coordinate = (-12.135400, -77.022095) # STARTING ADDRESS #(37.819859404476425, -
 
 m = folium.Map(
     title='cansat',
-    zoom_start=18,
-    location=coordinate
+    zoom_start=13,
+    location=coordinate,
+    max_zoom = 17
 )
+
+tile = folium.TileLayer(
+        tiles = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        attr = 'Esri',
+        name = 'Esri Satellite',
+        overlay = False,
+        control = True
+       ).add_to(m)
 
 data = io.BytesIO()
 m.save(data, close_file=False)
@@ -130,24 +140,25 @@ lon = 0
 def update_MAP(value_chain):
     global proxy3,m,data,W3,webView,l11,data,count,lat,lon
 
-    loc = []
-    if (lat == 0):
-        loc = [ (float(value_chain[1]), float(value_chain[0])),
-                (float(value_chain[1]), float(value_chain[0]))]
-    else:
-        loc = [ (lat, lon),
-                (float(value_chain[1]), float(value_chain[0]))]
-    lat = float(value_chain[1])
-    lon = float(value_chain[0])
-    m.location = (lat,lon)
+    if count == 5 or count == 10 or count == 15:
+        loc = []
+        if (lat == 0):
+            loc = [ (float(value_chain[1]), float(value_chain[0])),
+                    (float(value_chain[1]), float(value_chain[0]))]
+        else:
+            loc = [ (lat, lon),
+                    (float(value_chain[1]), float(value_chain[0]))]
+        lat = float(value_chain[1])
+        lon = float(value_chain[0])
+        m.location = (lat,lon)
+        
+        folium.PolyLine(loc,
+                    color='red',
+                    weight=15,
+                    opacity=0.8).add_to(m)
 
 
-    folium.PolyLine(loc,
-                color='red',
-                weight=15,
-                opacity=0.8).add_to(m)
-
-    if count == 20:
+    if count == 15:
         now = datetime.now()
         dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
 
@@ -161,8 +172,11 @@ def update_MAP(value_chain):
     data2 = io.BytesIO()
     m.save(data2, close_file=False)
     m.save('trayectoria.html')
-    if count == 20:
+    if count == 15:
+        webView.destroy()
+        webView = QWebEngineView()
         webView.setHtml(data2.getvalue().decode())
+        proxy3.setWidget(webView)
         count = 0
     else:
         count+=1
@@ -287,6 +301,7 @@ def update_temp(value_chain):
     temp_plot.setPos(ptr5, 0)
 
 
+
 # PARACHUTE - CAMERA - TRANSMITTER - CONTROL
 
 l2 = Layout.addLayout(border=(83, 83, 83))
@@ -295,17 +310,27 @@ l2 = Layout.addLayout(border=(83, 83, 83))
 transmitter_graph = l2.addPlot(title="Transmitter satus")
 transmitter_graph.hideAxis('bottom')
 transmitter_graph.hideAxis('left')
-
+prev_val_t = -1
 def update_transmitter(value_chain):
-    global transmitter_graph
+    global transmitter_graph,prev_val_t
     if value_chain[15] == 1:
-        transmitter_text1 = pg.TextItem("CONNECTED", anchor=(0.5, 0.5), color="g")
-        transmitter_text1.setFont(font)
-        transmitter_graph.addItem(transmitter_text1)
+        if prev_val_t != 1:
+            transmitter_graph.clear()
+            img = QtGui.QImage('CONNECTED.PNG')
+            img = img.convertToFormat(QtGui.QImage.Format_RGBA64)
+            imgArray = pg.imageToArray(img, copy=True)
+            imgitem = pg.ImageItem(imgArray.transpose([1, 0, 2]))
+            transmitter_graph.addItem(imgitem)
+            prev_val_t = 1
     else:
-        transmitter_text1 = pg.TextItem("NO SIGNAL", anchor=(0.5, 0.5), color="r")
-        transmitter_text1.setFont(font)
-        transmitter_graph.addItem(transmitter_text1)
+        if prev_val_t != 0:
+            transmitter_graph.clear()
+            img = QtGui.QImage('NO SIGNAL.PNG')
+            img = img.convertToFormat(QtGui.QImage.Format_RGBA64)
+            imgArray = pg.imageToArray(img, copy=True)
+            imgitem = pg.ImageItem(imgArray.transpose([1, 0, 2]))
+            transmitter_graph.addItem(imgitem)
+            prev_val_t = 0
 
 
 l2.nextRow()
@@ -314,17 +339,32 @@ l2.nextRow()
 camera_graph = l2.addPlot(title="Camera satus")
 camera_graph.hideAxis('bottom')
 camera_graph.hideAxis('left')
+prev_val = -1
 
 def update_camera(value_chain):
-    global camera_graph
+    global camera_graph, prev_val,ptr5,temp_plot,temp_data
+    
+
     if value_chain[14] == 1:
-        camera_text1= pg.TextItem("PASS", anchor=(0.5, 0.5), color="g")
-        camera_text1.setFont(font)
-        camera_graph.addItem(camera_text1)
+        if prev_val != 1:
+            camera_graph.clear()
+            img = QtGui.QImage('PASS.PNG')
+            img = img.convertToFormat(QtGui.QImage.Format_RGBA64)
+            imgArray = pg.imageToArray(img, copy=True)
+            imgitem = pg.ImageItem(imgArray.transpose([1, 0, 2]))
+            camera_graph.addItem(imgitem)
+            prev_val = 1
     else:
-        camera_text1= pg.TextItem("FAIL", anchor=(0.5, 0.5), color="r")
-        camera_text1.setFont(font)
-        camera_graph.addItem(camera_text1)
+        if prev_val != 0:
+            camera_graph.clear()
+            img = QtGui.QImage('FAIL.PNG')
+            img = img.convertToFormat(QtGui.QImage.Format_RGBA64)
+            imgArray = pg.imageToArray(img, copy=True)
+            imgitem = pg.ImageItem(imgArray.transpose([1, 0, 2]))
+            camera_graph.addItem(imgitem)
+            prev_val = 0
+
+    # camera_graph.setPos(ptrc, 0)
 
 
 l2.nextRow()
@@ -332,17 +372,37 @@ l2.nextRow()
 parachute_status_graph = l2.addPlot(title="Parachute deployed")
 parachute_status_graph.hideAxis('bottom')
 parachute_status_graph.hideAxis('left')
+prev_val_p = -1
 
 def update_parachute(value_chain):
-    global parachute_status_graph
+    global parachute_status_graph,prev_val_p
     if(value_chain[13] == 0):
-        parachute_status_text1  = pg.TextItem("NO", anchor=(0.5, 0.5), color="r")
-        parachute_status_text1.setFont(font)
-        parachute_status_graph.addItem(parachute_status_text1)
+        if prev_val_p != 1:
+        # parachute_status_graph.clearPlots()
+        # parachute_status_text1  = pg.TextItem("NO", anchor=(0.5, 0.5), color="r")
+        # parachute_status_text1.setFont(font)
+        # parachute_status_graph.addItem(parachute_status_text1)
+            parachute_status_graph.clear()
+            img = QtGui.QImage('NO.PNG')
+            img = img.convertToFormat(QtGui.QImage.Format_RGBA64)
+            imgArray = pg.imageToArray(img, copy=True)
+            imgitem = pg.ImageItem(imgArray.transpose([1, 0, 2]))
+            parachute_status_graph.addItem(imgitem)
+            prev_val_p = 1
+
     else:
-        parachute_status_text1  = pg.TextItem("Yes", anchor=(0.5, 0.5), color="g")
-        parachute_status_text1.setFont(font)
-        parachute_status_graph.addItem(parachute_status_text1)
+        if prev_val_p != 0:
+        # parachute_status_graph.clearPlots()
+        # parachute_status_text1 = pg.TextItem("NO", anchor=(0.5, 0.5), color="r")
+        # parachute_status_text1.setFont(font)
+        # parachute_status_graph.addItem(parachute_status_text1)
+            parachute_status_graph.clear()
+            img = QtGui.QImage('YES.PNG')
+            img = img.convertToFormat(QtGui.QImage.Format_RGBA64)
+            imgArray = pg.imageToArray(img, copy=True)
+            imgitem = pg.ImageItem(imgArray.transpose([1, 0, 2]))
+            parachute_status_graph.addItem(imgitem)
+            prev_val_p = 0
 
 def update():
     try:
@@ -355,9 +415,11 @@ def update():
         update_humidity(value_chain)
         update_pressure(value_chain)
         update_temp(value_chain)
+
         update_parachute(value_chain)
         update_camera(value_chain)
         update_transmitter(value_chain)
+        
         update_MAP(value_chain)
         update_altitude(value_chain)
 
